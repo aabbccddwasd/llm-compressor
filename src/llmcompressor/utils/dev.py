@@ -12,8 +12,36 @@ from huggingface_hub import snapshot_download
 from loguru import logger
 from safetensors.torch import save_file
 from transformers import AutoModelForCausalLM, PreTrainedModel
-from transformers.modeling_utils import TORCH_INIT_FUNCTIONS
 from transformers.utils import SAFE_WEIGHTS_INDEX_NAME, WEIGHTS_INDEX_NAME
+
+# Compatibility with transformers v5 (TORCH_INIT_FUNCTIONS was removed)
+try:
+    from transformers.modeling_utils import TORCH_INIT_FUNCTIONS
+except ImportError:
+    # Fallback: common torch init functions that need to be skipped
+    # Based on torch.nn.init module
+    TORCH_INIT_FUNCTIONS = {
+        "normal_": torch.nn.init.normal_,
+        "uniform_": torch.nn.init.uniform_,
+        "zeros_": torch.nn.init.zeros_,
+        "ones_": torch.nn.init.ones_,
+        "eye_": torch.nn.init.eye_,
+        "dirac_": torch.nn.init.dirac_,
+        "xavier_uniform_": torch.nn.init.xavier_uniform_,
+        "xavier_normal_": torch.nn.init.xavier_normal_,
+        "kaiming_uniform_": torch.nn.init.kaiming_uniform_,
+        "kaiming_normal_": torch.nn.init.kaiming_normal_,
+        "orthogonal_": torch.nn.init.orthogonal_,
+        "sparse_": torch.nn.init.sparse_,
+        "trunc_normal_": torch.nn.init.trunc_normal_,
+        # Also include non-_ versions (these are the same functions in some versions)
+        "normal": torch.nn.init.normal,
+        "uniform": torch.nn.init.uniform,
+        "xavier_uniform": torch.nn.init.xavier_uniform,
+        "xavier_normal": torch.nn.init.xavier_normal,
+        "kaiming_uniform": torch.nn.init.kaiming_uniform,
+        "kaiming_normal": torch.nn.init.kaiming_normal,
+    }
 
 __all__ = [
     "skip_weights_download",
