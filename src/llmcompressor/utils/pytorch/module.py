@@ -335,13 +335,33 @@ def get_no_split_params(model: PreTrainedModel) -> Union[str, List[str]]:
     Hugging Face Transformer models, this is the decoder layer type. For other
     types of models, this just returns all module names.
 
+    Compatible with both old and new Transformers API:
+    - Old API: uses _get_no_split_modules() method
+    - New API: uses _no_split_modules attribute
+
     :return: list of class names that shouldn't be split
     """
-    no_split_modules = model._get_no_split_modules("auto")
+    # Try old API for backwards compatibility
+    if hasattr(model, "_get_no_split_modules") and callable(
+        getattr(model, "_get_no_split_modules", None)
+    ):
+        no_split_modules = model._get_no_split_modules("auto")
+    # Use new API
+    elif hasattr(model, "_no_split_modules") and model._no_split_modules is not None:
+        no_split_modules = set(model._no_split_modules)
+    else:
+        no_split_modules = set()
+
+    # Recursively collect from child components to match new behavior
+    for child in model.children():
+        if isinstance(child, PreTrainedModel):
+            if hasattr(child, "_no_split_modules") and child._no_split_modules:
+                no_split_modules.update(child._no_split_modules)
+
     if len(no_split_modules) <= 0:
         return ALL_TARGET
 
-    return no_split_modules
+    return list(no_split_modules)
 
 
 # https://discuss.pytorch.org/t/how-to-access-to-a-layer-by-module-name/83797/8
