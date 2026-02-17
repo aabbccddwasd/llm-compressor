@@ -94,6 +94,26 @@ _qwen3_next_moe_mappings = [
     AWQMapping("re:.*up_proj$", ["re:.*down_proj$"]),
 ]
 
+# Qwen3.5-MoE uses standard attention with shared_expert in the MoE MLP
+# Similar to Qwen3Moe but with shared_expert like Qwen3Next
+_qwen3_5_moe_mappings = [
+    AWQMapping(
+        "re:.*input_layernorm$",
+        ["re:.*q_proj$", "re:.*k_proj$", "re:.*v_proj$"],
+    ),
+    AWQMapping("re:.*v_proj$", ["re:.*o_proj$"]),
+    AWQMapping(
+        "re:.*post_attention_layernorm$",
+        [
+            "re:.*mlp.experts.*.gate_proj$",
+            "re:.*mlp.experts.*.up_proj$",
+            "re:.*mlp.shared_expert.gate_proj$",
+            "re:.*mlp.shared_expert.up_proj$",
+        ],
+    ),
+    AWQMapping("re:.*up_proj$", ["re:.*down_proj$"]),
+]
+
 # Phi merges
 #  q, k, and v proj layers into a single qkv_proj layer
 #  gate and up proj layers into a single gate_up_proj layer
@@ -238,6 +258,7 @@ AWQ_MAPPING_REGISTRY: dict[str, list[AWQMapping]] = {
     "Qwen2MoeForCausalLM": _moe_default_mappings,
     "Qwen3ForCausalLM": _default_mappings,
     "Qwen3MoeForCausalLM": _moe_default_mappings,
+    "Qwen3_5MoeForConditionalGeneration": _qwen3_5_moe_mappings,
     "Qwen3NextForCausalLM": _qwen3_next_moe_mappings,
     "Glm4MoeForCausalLM": _default_mappings,
     "SeedOssForCausalLM": _default_mappings,
